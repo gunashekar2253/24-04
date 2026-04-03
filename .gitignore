@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# Data & Models (Heavy files)
+backend/data/raw/*.csv
+backend/data/processed/*.csv
+backend/ml_models/*.h5
+backend/ml_models/*.pkl
+backend/ml_models/*.json
+
+# Node
+node_modules/
+dist/
+.DS_Store
+
+# IDEs
+.vscode/
+.idea/

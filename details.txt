@@ -1,0 +1,60 @@
+phase-1
+1
+Creating backend directory structure, requirements.txt, config, database, and SQLAlchemy models
+
+2
+Creating config.py, database.py, SQLAlchemy models, and Pydantic schemas
+
+3
+Creating Pydantic schemas, JWT auth utilities, auth route, and main.py FastAPI entry point
+
+4
+Creating FastAPI main.py entry point and initializing React frontend with Vite
+
+5
+Installing frontend dependencies and setting up Python virtual environment for backend
+
+6
+Creating Python virtual environment and installing backend dependencies
+
+
+phase-2
+A. Prophet / XGBoost (The "Habit Predictor")
+These algorithms are designed to predict the future by finding habits and routines in your past.
+
+What it means: The AI analyzes thousands of rows of transaction data and notices patterns. It might notice: "Ah, people with this income level usually do a big grocery trip right after their paycheck clears on the 1st of the month."
+Why we need it: When a user opens their dashboard on the 28th of the month, the XGBoost model uses these learned habits to forecast: "Based on your history and profile, expect to spend about ₹15,000 on Food next week." It helps the user plan ahead.
+B. Isolation Forest (The "Weird Event Detector")
+While XGBoost tries to predict what is normal, Isolation Forest's entire job is to find what is weird or unusual.
+
+What it means: The AI looks at all of a user's past "Shopping" transactions. If the user normally spends ₹1,000, ₹2,500, or ₹3,000... the AI draws an invisible mathematical "box" around those numbers as the "normal zone." If suddenly a transaction for ₹85,000 appears under "Shopping", it falls completely outside that box. The algorithm "isolates" this data point.
+Why we need it: The moment the user enters that ₹85,000 expense, the Isolation Forest throws a red flag ⚠️ to the dashboard alerting the user: "Unusual Spending Detected! This is mathematically strange compared to your normal habits. Was this a mistake or a fraudulent charge?"
+
+
+Q: What features are there in the existing credit risk dataset? What are the others we added? A: The original 
+credit_risk_dataset.csv
+ contains baseline demographic and loan information. The key features we extracted from it were person_age, person_income, loan_amnt, loan_int_rate (interest rate), cb_person_default_on_file (history of defaulting), and loan_status (whether they defaulted on this specific loan, which we use directly as our risk_level target).
+
+The features we synthesized (added) to make it a complete financial profile are:
+
+monthly_expenses
+total_savings
+monthly_emi
+credit_score
+credit_card_usage
+Target Labels: savings_ratio, debt_ratio, budget_stability
+
+Q: Did we not consider the remaining datasets at all? Do we only train using the ones we generated? A: We use the generated financial_profiles.csv specifically to train the Risk Prediction Neural Network (because Neural Networks need massive amounts of structured profile data to learn baseline financial stability). However, we are still using the 
+financial_hci_dataset.csv
+! That dataset acts as our raw Transaction Ledger. It is used separately to train the Isolation Forest and XGBoost/Prophet models, which specialize in spotting time-series anomalies and forecasting daily spending habits independent of the user's statically generated profile.
+
+
+Here is exactly how the correlation logic was applied in the code:
+
+Monthly Expenses (Correlated to Income): People usually spend in proportion to what they earn. The script calculates expenses by taking the user's monthly_income and randomly multiplying it by a realistic utilization bracket (between 30% and 90%). This ensures a high-earner naturally spends more than a low-earner, keeping the ratios mathematically sound.
+Total Savings (Correlated to Discretionary Income): We calculated discretionary ("leftover") income by simply doing 
+
+(Income - Expenses)
+. We then assumed the user had been saving this exact leftover amount for a random period between 5 and 60 months. This mathematically guarantees that a user who spends 90% of their paycheck will realistically have a tiny savings pool, while a frugal user has a large one.
+Monthly EMI (Mathematically Exact): We didn't guess their monthly loan payment. Because the Kaggle dataset gave us their actual loan_amount and their loan_int_rate (interest rate), the script runs the literal, real-world Bank Amortization Formula for a 48-month loan: (Principal × Rate × (1 + Rate)⁴⁸ / (1 + Rate)⁴⁸ - 1). The resulting EMI is perfectly accurate for whatever loan they took out.
+Credit Score (Correlated to Default History): The Kaggle dataset included a column called cb_person_default_on_file (which was either 'Y' or 'N'). If the real Kaggle data indicated the user had a history of defaulting, the script forced their synthesized credit score to fall specifically within the "Poor" bracket (300–580). If they had a clean record, it placed them in the "Good/Excellent" bracket (600–850).
