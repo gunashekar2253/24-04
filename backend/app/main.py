@@ -18,16 +18,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from app.routes import auth, profile, transactions, analysis, query, goals, stocks
+
 # Include routers
 app.include_router(auth.router)
-
-# Future routers (will be added in later phases):
-# app.include_router(profile.router)
-# app.include_router(transactions.router)
-# app.include_router(analysis.router)
-# app.include_router(query.router)
-# app.include_router(goals.router)
-# app.include_router(stocks.router)
+app.include_router(profile.router)
+app.include_router(transactions.router)
+app.include_router(analysis.router)
+app.include_router(query.router)
+app.include_router(goals.router)
+app.include_router(stocks.router)
 
 
 @app.on_event("startup")

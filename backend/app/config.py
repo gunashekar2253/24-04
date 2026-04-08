@@ -21,13 +21,15 @@ class Settings:
 
     # ML Model Paths
     RISK_MODEL_PATH: str = "ml_models/risk_model.h5"
-    SCALER_PATH: str = "ml_models/scaler.pkl"
-    ANOMALY_ISO_PATH: str = "ml_models/anomaly_iso.pkl"
-    ANOMALY_AE_PATH: str = "ml_models/anomaly_autoencoder.h5"
-    SPENDING_GB_PATH: str = "ml_models/spending_gb.pkl"
+    RISK_SCALER_PATH: str = "ml_models/risk_scaler.pkl"
+    ANOMALY_ISO_PATH: str = "ml_models/isolation_forest.pkl"
+    ANOMALY_AE_PATH: str = "ml_models/autoencoder.h5"
+    ANOMALY_SCALER_PATH: str = "ml_models/anomaly_scaler.pkl"
+    SPENDING_XGB_PATH: str = "ml_models/spending_xgboost.pkl"
+    SPENDING_PROPHET_PATH: str = "ml_models/spending_prophet.json"
 
     # Dataset
-    DATASET_PATH: str = "data/financial_profiles.csv"
+    DATASET_PATH: str = "data/processed/financial_profiles.csv"
 
 
 settings = Settings()
