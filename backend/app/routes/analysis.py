@@ -35,8 +35,6 @@ def get_dashboard_data(
 
     # 1. Base AI Engines
     risk_assessment = risk_predictor.predict(profile_dict)
-    budget_optimizations = budget_optimizer.optimize(profile_dict)
-    investments = investment_calculator.calculate(profile_dict)
 
     # 2. Transaction Dependent Engines
     transactions = db.query(Transaction).filter(Transaction.user_id == current_user.id).order_by(Transaction.date.desc()).all()
@@ -54,7 +52,7 @@ def get_dashboard_data(
             if t.type == "expense" and t.date.month == now.month and t.date.year == now.year:
                 current_month_spending += t.amount
                 
-            analysis = anomaly_detector.detect(amount=t.amount, balance=t.amount)
+            analysis = anomaly_detector.detect(amount=t.amount, balance=profile.total_savings)
             if analysis["is_anomaly"]:
                 recent_anomalies.append({
                      "id": t.id,
@@ -65,19 +63,25 @@ def get_dashboard_data(
                 })
         
         
-        # Spending Forecast from Prophet
-        spending_forecast = spending_forecaster.forecast_spending(days=30)
+        # Decision Engine Fusion (Prophet + XGBoost)
+        spending_forecast = spending_forecaster.predict_spending_fusion(profile_dict)
     else:
-        # Fallback profile-based budget if no transactions exist
-        predicted_budget = spending_forecaster.predict_budget(profile.monthly_expenses, profile.credit_score)
-        spending_forecast = {
-            "status": "No historical transactions found.",
-            "estimated_monthly_spend": predicted_budget["predicted_budget_utilized"]
-        }
+        # Fallback profile-based behavioral model if no transactions exist
+        spending_forecast = spending_forecaster.predict_spending_fusion(profile_dict)
+        spending_forecast["status"] = "No historical transactions. Behavioral static scaling applied."
 
-    # Deduct actual Live expenditures from AI baselines so Dashboard reflects instantly
-    investments["disposable_income"] = max(0, investments["disposable_income"] - current_month_spending)
-    investments["safe_monthly_investment"] = max(0, investments["safe_monthly_investment"] - current_month_spending)
+    # 3. Dynamic Advisory AI (Cross-Engine Binding)
+    budget_optimizations = budget_optimizer.optimize(
+        profile_dict,
+        risk=risk_assessment,
+        forecast=spending_forecast
+    )
+    
+    investments = investment_calculator.calculate(
+        profile_dict,
+        risk=risk_assessment,
+        forecast=spending_forecast
+    )
 
     return {
         "risk_assessment": risk_assessment,

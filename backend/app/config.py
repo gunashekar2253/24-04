@@ -20,10 +20,9 @@ class Settings:
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
 
     # ML Model Paths
-    RISK_MODEL_PATH: str = "ml_models/risk_model.h5"
+    RISK_MODEL_PATH: str = "ml_models/risk_model.pkl"
     RISK_SCALER_PATH: str = "ml_models/risk_scaler.pkl"
     ANOMALY_ISO_PATH: str = "ml_models/isolation_forest.pkl"
-    ANOMALY_AE_PATH: str = "ml_models/autoencoder.h5"
     ANOMALY_SCALER_PATH: str = "ml_models/anomaly_scaler.pkl"
     SPENDING_XGB_PATH: str = "ml_models/spending_xgboost.pkl"
     SPENDING_PROPHET_PATH: str = "ml_models/spending_prophet.json"

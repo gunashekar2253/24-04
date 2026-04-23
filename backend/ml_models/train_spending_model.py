@@ -4,54 +4,81 @@ import numpy as np
 import joblib
 from xgboost import XGBRegressor
 from prophet import Prophet
+from prophet.serialize import model_to_json
+from sklearn.preprocessing import StandardScaler
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
-DATA_PATH = os.path.join(BASE_DIR, "data", "raw", "financial_hci_dataset.csv") # Transactions
+PROFILE_PATH = os.path.join(BASE_DIR, "data", "processed", "financial_profiles.csv")
+TRANS_PATH = os.path.join(BASE_DIR, "data", "raw", "financial_hci_dataset.csv") 
 MODEL_DIR = os.path.join(BASE_DIR, "ml_models")
 
 if not os.path.exists(MODEL_DIR):
     os.makedirs(MODEL_DIR)
 
-print("Loading transactions dataset for Spending Prediction...")
-df = pd.read_csv(DATA_PATH)
+# ---------------------------------------------------------
+# PHASE 2.1: Train XGBoost (Behavior Model) using Dataset A
+# ---------------------------------------------------------
+print("Loading snapshot dataset for XGBoost Behavior Modeling...")
+df_prof = pd.read_csv(PROFILE_PATH)
 
-# For XGBoost we can try predicting Budget_Utilized based on other static features or aggregated features over time
-# For Prophet, we need 'ds' (date) and 'y' (amount)
+# Feature engineering (Ratios)
+df_prof['expense_ratio'] = df_prof['monthly_expenses'] / df_prof['monthly_income'].replace(0, 1)
+df_prof['debt_ratio'] = df_prof['loan_amount'] / (df_prof['monthly_income'] * 12).replace(0, 1)
 
-# 1. Train XGBoost
+# Ensure budget_stability is explicitly generated accurately relative to the engineered proportion.
+df_prof["budget_stability"] = 1 - df_prof["expense_ratio"]
+df_prof["budget_stability"] = df_prof["budget_stability"].clip(0, 1)
+
+features = [
+    "monthly_income",
+    "monthly_expenses",
+    "total_savings",
+    "credit_score",
+    "expense_ratio",
+    "debt_ratio"
+]
+target = "budget_stability"
+
+X_xgb = df_prof[features].fillna(0)
+y_xgb = df_prof[target].fillna(0)
+
+# Scale features to assist XGBoost trees
+scaler = StandardScaler()
+X_xgb_scaled = scaler.fit_transform(X_xgb)
+joblib.dump(scaler, os.path.join(MODEL_DIR, "spending_xgb_scaler.pkl"))
+
 print("Training XGBoost...")
-features = ['Amount', 'Credit_Score'] # In real app we would use historic aggregations
-target = 'Budget_Utilized'
+xgb_model = XGBRegressor(n_estimators=100, learning_rate=0.1, random_state=42)
+xgb_model.fit(X_xgb_scaled, y_xgb)
 
-if target in df.columns:
-    X_xgb = df[features].fillna(0)
-    y_xgb = df[target].fillna(0)
-    
-    xgb_model = XGBRegressor(n_estimators=100, learning_rate=0.1, random_state=42)
-    xgb_model.fit(X_xgb, y_xgb)
-    
-    xgb_path = os.path.join(MODEL_DIR, "spending_xgboost.pkl")
-    joblib.dump(xgb_model, xgb_path)
-    print(f"XGBoost Model saved successfully at {xgb_path}")
-else:
-    print(f"Target '{target}' not found for XGBoost.")
+xgb_path = os.path.join(MODEL_DIR, "spending_xgboost.pkl")
+joblib.dump(xgb_model, xgb_path)
+print(f"XGBoost Behavior Model saved successfully at {xgb_path}")
 
-# 2. Train Prophet
-print("Training Prophet Model...")
-if 'Date' in df.columns and 'Amount' in df.columns:
-    prophet_df = df[['Date', 'Amount']].rename(columns={'Date': 'ds', 'Amount': 'y'})
-    # Group by date to get total daily spend
-    prophet_df = prophet_df.groupby('ds', as_index=False).sum()
-    prophet_df['ds'] = pd.to_datetime(prophet_df['ds'], format="%Y-%m-%d")
-    
-    prophet_model = Prophet(yearly_seasonality=True, weekly_seasonality=True, daily_seasonality=False)
-    prophet_model.fit(prophet_df)
-    
-    prophet_path = os.path.join(MODEL_DIR, "spending_prophet.json")
-    # Prophet provides built-in JSON serialization. Using joblib works too but saving to json is better
-    from prophet.serialize import model_to_json
-    with open(prophet_path, 'w') as fout:
-        fout.write(model_to_json(prophet_model))
-    print(f"Prophet Model saved successfully at {prophet_path}")
-else:
-    print("Required columns for Prophet not found.")
+# ---------------------------------------------------------
+# PHASE 2.2: Train Prophet (Temporal Model) using Dataset B
+# ---------------------------------------------------------
+print("Loading transactions dataset for Prophet Temporal Modeling...")
+df_trans = pd.read_csv(TRANS_PATH)
+
+# We want out-flowing transactions -> Expenses
+df_exp = df_trans[df_trans['Transaction_Type'] == 'Expense'].copy()
+
+# Group by Date
+df_daily = df_exp.groupby("Date")["Amount"].sum().reset_index()
+df_daily.columns = ['ds', 'y']
+# Mandatory formatting for Prophet internal bayesian logic
+df_daily['ds'] = pd.to_datetime(df_daily['ds'])
+
+print("Training Prophet...")
+model = Prophet(
+    yearly_seasonality=True,
+    weekly_seasonality=True,
+    daily_seasonality=False
+)
+model.fit(df_daily)
+
+# Prophet serialized via JSON instead of joblib natively
+with open(os.path.join(MODEL_DIR, "spending_prophet.json"), 'w') as fout:
+    fout.write(model_to_json(model))
+print("Prophet Temporal forecast saved successfully!")

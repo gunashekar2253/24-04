@@ -17,6 +17,14 @@ def add_transaction(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    INCOME_CATEGORIES = {"Salary", "Bonus", "Freelance / Part-time", "Business Income", "Investment Returns", "Other Income"}
+    EXPENSE_CATEGORIES = {"Food & Dining", "Housing & Rent", "Transportation", "Utilities", "Entertainment", "Shopping", "Healthcare", "Other Expenses"}
+
+    if transaction_in.type == "income" and transaction_in.category not in INCOME_CATEGORIES:
+        raise HTTPException(status_code=400, detail="Invalid income category selected.")
+    if transaction_in.type == "expense" and transaction_in.category not in EXPENSE_CATEGORIES:
+        raise HTTPException(status_code=400, detail="Invalid expense category selected.")
+
     transaction = Transaction(
         user_id=current_user.id,
         **transaction_in.dict()
@@ -25,8 +33,11 @@ def add_transaction(
     db.commit()
     db.refresh(transaction)
 
-    # Check for anomaly (assuming passing hardcoded balance based on profile later, but using 0 for isolated detection)
-    anomaly_status = anomaly_detector.detect(amount=transaction.amount, balance=transaction.amount)
+    # Check for anomaly using actual profile savings to correctly calculate impact context
+    from app.models.profile import FinancialProfile
+    profile = db.query(FinancialProfile).filter(FinancialProfile.user_id == current_user.id).first()
+    savings = profile.total_savings if profile else 0
+    anomaly_status = anomaly_detector.detect(amount=transaction.amount, balance=savings)
 
     return {
         **transaction.__dict__,
@@ -41,11 +52,15 @@ def get_transactions(
 ):
     transactions = db.query(Transaction).filter(Transaction.user_id == current_user.id).order_by(Transaction.date.desc()).all()
     
+    from app.models.profile import FinancialProfile
+    profile = db.query(FinancialProfile).filter(FinancialProfile.user_id == current_user.id).first()
+    savings = profile.total_savings if profile else 0
+
     results = []
     for t in transactions:
         results.append({
             **t.__dict__,
-            "anomaly_analysis": anomaly_detector.detect(amount=t.amount, balance=t.amount)
+            "anomaly_analysis": anomaly_detector.detect(amount=t.amount, balance=savings)
         })
         
     return results

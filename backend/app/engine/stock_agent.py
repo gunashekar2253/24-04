@@ -3,8 +3,6 @@ Stock Agent Engine
 Uses CrewAI + yfinance to analyze stocks and provide AI-driven stock insights.
 """
 import yfinance as yf
-from crewai import Agent, Task, Crew
-
 
 class StockAgent:
 
@@ -62,36 +60,46 @@ class StockAgent:
         if stock_data.get("error"):
             return {"analysis": f"Could not fetch data for {ticker}.", "error": stock_data["error"]}
 
-        # Create CrewAI agent
-        analyst = Agent(
-            role="Financial Stock Analyst",
-            goal=f"Analyze the stock {ticker} and provide investment insights",
-            backstory="You are an expert equity research analyst with 15 years of experience. "
-                      "You provide clear, data-driven buy/sell/hold recommendations.",
-            verbose=False,
-            allow_delegation=False
-        )
-
-        analysis_task = Task(
-            description=f"""Analyze this stock data and provide a brief investment summary:
-            Stock: {stock_data['name']} ({ticker})
-            Current Price: {stock_data['current_price']}
-            Market Cap: {stock_data['market_cap']}
-            P/E Ratio: {stock_data['pe_ratio']}
-            52-Week High: {stock_data['52_week_high']}
-            52-Week Low: {stock_data['52_week_low']}
-            Sector: {stock_data['sector']}
-
-            Provide:
-            1. Brief summary (2-3 lines)
-            2. Key strengths and risks
-            3. Buy/Hold/Sell recommendation with reasoning
-            """,
-            expected_output="A concise stock analysis with recommendation",
-            agent=analyst
-        )
-
         try:
+            from crewai import Agent, Task, Crew
+            from langchain_google_genai import ChatGoogleGenerativeAI
+            from app.config import settings
+            
+            gemini_llm = ChatGoogleGenerativeAI(
+                model="gemini-3-flash", 
+                google_api_key=settings.GEMINI_API_KEY
+            )
+            
+            # Create CrewAI agent
+            analyst = Agent(
+                role="Financial Stock Analyst",
+                goal=f"Analyze the stock {ticker} and provide investment insights",
+                backstory="You are an expert equity research analyst with 15 years of experience. "
+                          "You provide clear, data-driven buy/sell/hold recommendations.",
+                verbose=False,
+                allow_delegation=False,
+                llm=gemini_llm
+            )
+
+            analysis_task = Task(
+                description=f"""Analyze this stock data and provide a brief investment summary:
+                Stock: {stock_data['name']} ({ticker})
+                Current Price: {stock_data['current_price']}
+                Market Cap: {stock_data['market_cap']}
+                P/E Ratio: {stock_data['pe_ratio']}
+                52-Week High: {stock_data['52_week_high']}
+                52-Week Low: {stock_data['52_week_low']}
+                Sector: {stock_data['sector']}
+
+                Provide:
+                1. Brief summary (2-3 lines)
+                2. Key strengths and risks
+                3. Buy/Hold/Sell recommendation with reasoning
+                """,
+                expected_output="A concise stock analysis with recommendation",
+                agent=analyst
+            )
+
             crew = Crew(agents=[analyst], tasks=[analysis_task], verbose=False)
             result = crew.kickoff()
             analysis_text = str(result)
@@ -107,28 +115,39 @@ class StockAgent:
         """Answer a follow-up question about a specific stock using CrewAI."""
         stock_data = self.get_stock_data(ticker)
 
-        chat_agent = Agent(
-            role="Stock Chat Assistant",
-            goal=f"Answer questions about the stock {ticker}",
-            backstory="You are a friendly stock market expert who answers investor questions clearly.",
-            verbose=False,
-            allow_delegation=False
-        )
-
-        chat_task = Task(
-            description=f"""Answer this question about {ticker} ({stock_data.get('name', ticker)}):
-            Current Price: {stock_data.get('current_price', 'N/A')}
-            Sector: {stock_data.get('sector', 'N/A')}
-
-            User Question: {question}
-
-            Provide a clear, concise answer.
-            """,
-            expected_output="A clear answer to the user's stock question",
-            agent=chat_agent
-        )
-
         try:
+            from crewai import Agent, Task, Crew
+            from langchain_google_genai import ChatGoogleGenerativeAI
+            from app.config import settings
+
+            gemini_llm = ChatGoogleGenerativeAI(
+                model="gemini-3-flash", 
+                temperature=0.5,
+                google_api_key=settings.GEMINI_API_KEY
+            )
+            
+            chat_agent = Agent(
+                role="Stock Chat Assistant",
+                goal=f"Answer questions about the stock {ticker}",
+                backstory="You are a friendly stock market expert who answers investor questions clearly.",
+                verbose=False,
+                allow_delegation=False,
+                llm=gemini_llm
+            )
+
+            chat_task = Task(
+                description=f"""Answer this question about {ticker} ({stock_data.get('name', ticker)}):
+                Current Price: {stock_data.get('current_price', 'N/A')}
+                Sector: {stock_data.get('sector', 'N/A')}
+
+                User Question: {question}
+
+                Provide a clear, concise answer.
+                """,
+                expected_output="A clear answer to the user's stock question",
+                agent=chat_agent
+            )
+
             crew = Crew(agents=[chat_agent], tasks=[chat_task], verbose=False)
             result = crew.kickoff()
             answer = str(result)

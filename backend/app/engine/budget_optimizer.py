@@ -1,58 +1,96 @@
 """
 Budget Optimizer Engine
-Provides AI-driven budget recommendations based on the user's financial profile.
+Provides AI-driven budget recommendations structured dynamically atop baseline ratios.
 """
-
 
 class BudgetOptimizer:
 
-    # Ideal allocation percentages (50/30/20 rule adapted)
-    IDEAL_ALLOCATION = {
-        "needs": 0.50,       # Rent, utilities, groceries, EMI
-        "wants": 0.30,       # Entertainment, dining, travel
-        "savings": 0.20      # Savings + investments
-    }
-
-    def optimize(self, profile: dict) -> dict:
+    def optimize(self, profile: dict, risk: dict = None, forecast: dict = None) -> dict:
         """
-        Accepts profile dict with: monthly_income, monthly_expenses,
-        total_savings, loan_amount, monthly_emi, credit_card_usage
-        Returns optimized budget plan.
+        Accepts profile dict, and optionally risk/forecast ML outputs to generate
+        a dynamic, scored, and intelligent financial action plan.
         """
-        income = profile["monthly_income"]
-        expenses = profile["monthly_expenses"]
+        # 1. Foundation Metrics
+        income = max(profile.get("monthly_income", 1), 1)
+        expenses = profile.get("monthly_expenses", 0)
         emi = profile.get("monthly_emi", 0)
         savings = profile.get("total_savings", 0)
         cc_usage = profile.get("credit_card_usage", 0)
 
-        # Current ratios
-        expense_ratio = expenses / (income + 1)
-        savings_rate = max(0, (income - expenses - emi)) / (income + 1)
-        debt_burden = (emi + cc_usage * income * 0.2) / (income + 1)
+        expense_ratio = expenses / income
+        savings_rate = max(0, income - expenses - emi) / income
+        debt_ratio = emi / income
+        
+        # 2. Dynamic Allocations securely tracking over baseline
+        allocation = {"needs": 0.50, "wants": 0.30, "savings": 0.20}
+        if debt_ratio > 0.4:
+            allocation["needs"] = 0.60
+            allocation["wants"] = 0.20
+            allocation["savings"] = 0.20
+        elif savings_rate < 0.1:
+            allocation["needs"] = 0.55
+            allocation["wants"] = 0.25
+            allocation["savings"] = 0.20
 
-        # Ideal targets
-        ideal_needs = income * self.IDEAL_ALLOCATION["needs"]
-        ideal_wants = income * self.IDEAL_ALLOCATION["wants"]
-        ideal_savings = income * self.IDEAL_ALLOCATION["savings"]
+        ideal_needs = income * allocation["needs"]
+        ideal_wants = income * allocation["wants"]
+        ideal_savings = income * allocation["savings"]
 
-        # Recommendations
-        recommendations = []
-        if expense_ratio > 0.70:
-            recommendations.append("Your expenses exceed 70% of income. Try reducing discretionary spending.")
-        if savings_rate < 0.10:
-            recommendations.append("Your savings rate is below 10%. Aim for at least 20% of income.")
-        if debt_burden > 0.40:
-            recommendations.append("Your debt-to-income ratio is high. Consider debt consolidation.")
+        # 3. Gap Analysis
+        actual_savings = income - expenses - emi
+        savings_gap = ideal_savings - actual_savings
+        
+        # 4. Severity Scoring (100-bound map)
+        score = 100
+        score -= min(expense_ratio * 50, 50)
+        score -= (0.2 - savings_rate) * 100 if savings_rate < 0.2 else 0
+        score -= min(debt_ratio * 40, 40)
+        score = max(0, min(100, round(score)))
+        
+        # 5. SMART Recommendations Generation
+        recs = []
+        if expense_ratio > 0.60:
+            reduction = (expense_ratio - 0.6) * income
+            recs.append(f"Reduce expenses by \u20b9{reduction:,.0f}/month to reach your structurally healthy capacity.")
+            
+        if savings_rate < 0.20 and savings_gap > 0:
+            recs.append(f"Increase savings by \u20b9{savings_gap:,.0f}/month to instantly reach your baseline 20% target.")
+        elif actual_savings > 0:
+            recs.append(f"Excellent savings rate! You are saving \u20b9{actual_savings:,.0f}/month (\u20b9{abs(savings_gap):,.0f} above your baseline).")
+
+        if debt_ratio > 0.40:
+            recs.append(f"Your debt ratio ({debt_ratio*100:.1f}%) is dangerously high. Target debt consolidation.")
         if cc_usage > 0.50:
-            recommendations.append("Credit card utilization is above 50%. This may impact your credit score.")
-        if not recommendations:
-            recommendations.append("Your financial health looks great! Keep it up.")
+            recs.append(f"Credit limit utilized at {cc_usage*100:.1f}%! Keep this beneath 50% to shield your Credit Score.")
+            
+        # 6. Cross-Engine ML Fusion
+        if risk and risk.get("risk_score", 0) > 70:
+            recs.append("High neural financial risk detected\u2014prioritize emergency savings.")
+        
+        if forecast:
+            monthly_forecast = forecast.get("average_future_spend_daily", 0) * 30
+            spend_ratio = monthly_forecast / income
+            if spend_ratio > 0.8 or forecast.get("trend", 0) > 0.5:
+                recs.append("Your forecast spending pace is mathematically rising\u2014plan cuts now.")
+                
+        if not recs:
+            recs.append("Your financial equilibrium is absolutely perfect. Excellent discipline!")
+            
+        # Top 5 prioritization to prevent UI pollution
+        recommendations = recs[:5]
+        
+        health_status = "Good" if score > 70 else ("Moderate" if score > 40 else "Needs Improvement")
 
         return {
+            "budget_score": score,
+            "health": health_status,
+            "gap_analysis": {
+                "savings_gap": round(savings_gap, 2)
+            },
             "current_snapshot": {
                 "expense_ratio": round(expense_ratio * 100, 2),
                 "savings_rate": round(savings_rate * 100, 2),
-                "debt_burden": round(debt_burden * 100, 2)
+                "debt_ratio": round(debt_ratio * 100, 2)
             },
             "ideal_budget": {
                 "needs": round(ideal_needs, 2),
@@ -60,9 +98,8 @@ class BudgetOptimizer:
                 "savings_investment": round(ideal_savings, 2)
             },
             "recommendations": recommendations,
-            "budget_health": "Good" if expense_ratio < 0.6 and savings_rate > 0.15 else "Needs Improvement"
+            "allocation_model": allocation
         }
-
 
 # Singleton instance
 budget_optimizer = BudgetOptimizer()

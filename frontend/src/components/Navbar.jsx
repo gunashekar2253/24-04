@@ -1,7 +1,7 @@
 import React, { useContext } from 'react';
 import { NavLink } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { BrainCircuit, LineChart, MessageSquare, Target, LogOut, Wallet } from 'lucide-react';
+import { BrainCircuit, LineChart, MessageSquare, Target, LogOut, Wallet, UserCog } from 'lucide-react';
 
 const Navbar = () => {
   const { logout, user } = useContext(AuthContext);
@@ -26,8 +26,8 @@ const Navbar = () => {
         <NavLink to="/stocks" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <LineChart size={18} /> Stocks
         </NavLink>
-        <NavLink to="/goals" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Target size={18} /> Goals
+        <NavLink to="/profile" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <UserCog size={18} /> Settings
         </NavLink>
       </div>
 

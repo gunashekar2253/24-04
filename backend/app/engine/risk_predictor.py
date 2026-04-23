@@ -1,18 +1,17 @@
 """
 Risk Predictor Engine
-Loads the trained TensorFlow ReLU model and scaler to predict financial risk.
+Loads the trained XGBoost model and scaler to predict financial risk.
 """
 import os
 import numpy as np
 import joblib
-import tensorflow as tf
 from app.config import settings
 
 
 class RiskPredictor:
     def __init__(self):
         base = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-        self.model = tf.keras.models.load_model(os.path.join(base, settings.RISK_MODEL_PATH))
+        self.model = joblib.load(os.path.join(base, settings.RISK_MODEL_PATH))
         self.scaler = joblib.load(os.path.join(base, settings.RISK_SCALER_PATH))
 
     def predict(self, profile: dict) -> dict:
@@ -22,7 +21,11 @@ class RiskPredictor:
           loan_amount, monthly_emi, credit_score, credit_card_usage
         Returns risk score and label.
         """
-        features = np.array([[
+        income = max(profile["monthly_income"], 1)
+        expense_ratio = profile["monthly_expenses"] / income
+        debt_ratio = profile["loan_amount"] / (income * 12)
+
+        features = np.array([[ 
             profile["age"],
             profile["monthly_income"],
             profile["monthly_expenses"],
@@ -30,10 +33,33 @@ class RiskPredictor:
             profile["loan_amount"],
             profile["monthly_emi"],
             profile["credit_score"],
-            profile["credit_card_usage"]
+            profile["credit_card_usage"],
+            expense_ratio,
+            debt_ratio
         ]])
+
         scaled = self.scaler.transform(features)
-        prob = float(self.model.predict(scaled, verbose=0)[0][0])
+        prob = float(self.model.predict_proba(scaled)[0][1])
+
+        # --- FINANCIAL HEURISTIC OVERLAY ---
+        # XGBoost trees can fail on extreme monetary outliers (e.g. 150k income)
+        # by routing them to "rich bounds" and ignoring equally extreme expenses.
+
+        if expense_ratio > 0.95:
+            prob = max(prob, 0.88)
+        elif expense_ratio > 0.80:
+            prob = max(prob, 0.65)
+            
+        if debt_ratio > 3.0:
+            prob = max(prob, 0.85)
+        elif debt_ratio > 1.5:
+            prob = max(prob, 0.55)
+
+        if profile["credit_score"] < 500:
+            prob = max(prob, 0.80)
+
+        prob = min(prob, 0.99)
+        # --- END OVERLAY ---
 
         if prob >= 0.7:
             label = "High Risk"

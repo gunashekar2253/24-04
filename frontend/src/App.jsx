@@ -8,7 +8,7 @@ import Dashboard from './pages/Dashboard';
 import AddDetails from './pages/AddDetails';
 import AIAssistant from './pages/AIAssistant';
 import StockAnalysis from './pages/StockAnalysis';
-import Goals from './pages/Goals';
+import ProfileSettings from './pages/ProfileSettings';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useContext(AuthContext);
@@ -43,7 +43,7 @@ const AppRoutes = () => {
       <Route path="/add-details" element={<ProtectedRoute><AddDetails /></ProtectedRoute>} />
       <Route path="/assistant" element={<ProtectedRoute><AIAssistant /></ProtectedRoute>} />
       <Route path="/stocks" element={<ProtectedRoute><StockAnalysis /></ProtectedRoute>} />
-      <Route path="/goals" element={<ProtectedRoute><Goals /></ProtectedRoute>} />
+      <Route path="/profile" element={<ProtectedRoute><ProfileSettings /></ProtectedRoute>} />
     </Routes>
   );
 };

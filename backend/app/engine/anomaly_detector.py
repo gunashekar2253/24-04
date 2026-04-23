@@ -1,11 +1,10 @@
 """
 Anomaly Detector Engine
-Uses Isolation Forest + Autoencoder to detect anomalous transactions.
+Uses Isolation Forest to detect anomalous transactions.
 """
 import os
 import numpy as np
 import joblib
-import tensorflow as tf
 from app.config import settings
 
 
@@ -14,38 +13,42 @@ class AnomalyDetector:
         base = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
         self.scaler = joblib.load(os.path.join(base, settings.ANOMALY_SCALER_PATH))
         self.iso_forest = joblib.load(os.path.join(base, settings.ANOMALY_ISO_PATH))
-        self.autoencoder = tf.keras.models.load_model(os.path.join(base, settings.ANOMALY_AE_PATH), compile=False)
 
     def detect(self, amount: float, balance: float) -> dict:
         """
         Check if a single transaction is anomalous.
-        Returns anomaly flags from both Isolation Forest and Autoencoder.
+        Returns anomaly flags from Isolation Forest.
         """
-        features = np.array([[amount, balance]])
+        impact = amount / max(balance, 1)
+        features = np.array([[amount, balance, impact]])
         scaled = self.scaler.transform(features)
 
         # Isolation Forest: -1 = anomaly, 1 = normal
         iso_pred = int(self.iso_forest.predict(scaled)[0])
+        score = float(self.iso_forest.decision_function(scaled)[0])
         iso_anomaly = iso_pred == -1
 
-        # Autoencoder: high reconstruction error = anomaly
-        reconstructed = self.autoencoder.predict(scaled, verbose=0)
-        reconstruction_error = float(np.mean(np.abs(scaled - reconstructed)))
-        ae_anomaly = reconstruction_error > 0.5  # Threshold
-
-        is_anomaly = iso_anomaly or ae_anomaly
+        # Relative Severity Overlay
+        severity = "Normal"
+        if iso_anomaly:
+            if impact > 0.5 or amount > 50000:
+                severity = "Critical"
+            elif impact > 0.2 or amount > 5000:
+                severity = "High"
+            elif amount > 500:
+                severity = "Medium"
+            else:
+                # Suppress negligible monetary anomalies
+                iso_anomaly = False
+                severity = "Normal"
 
         return {
-            "is_anomaly": is_anomaly,
+            "is_anomaly": iso_anomaly,
             "isolation_forest": {
                 "prediction": "Anomaly" if iso_anomaly else "Normal",
-                "raw_score": iso_pred
+                "ml_score": score
             },
-            "autoencoder": {
-                "prediction": "Anomaly" if ae_anomaly else "Normal",
-                "reconstruction_error": round(reconstruction_error, 4)
-            },
-            "severity": "High" if (iso_anomaly and ae_anomaly) else ("Medium" if is_anomaly else "Low")
+            "severity": severity
         }
 
     def detect_batch(self, transactions: list) -> list:

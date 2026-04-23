@@ -24,6 +24,14 @@ const AddDetails = () => {
     fetchTransactions();
   }, []);
 
+  useEffect(() => {
+    if (type === 'income') {
+      setCategory('Salary');
+    } else {
+      setCategory('Food & Dining');
+    }
+  }, [type]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -80,14 +88,27 @@ const AddDetails = () => {
           <div className="form-group">
             <label>Category</label>
             <select className="form-input" value={category} onChange={(e) => setCategory(e.target.value)} required style={{ appearance: 'none' }}>
-              <option value="Food">Food & Dining</option>
-              <option value="Rent">Housing & Rent</option>
-              <option value="Salary">Salary</option>
-              <option value="Transport">Transportation</option>
-              <option value="Utilities">Utilities</option>
-              <option value="Entertainment">Entertainment</option>
-              <option value="Investment">Investment</option>
-              <option value="Other">Other</option>
+              {type === 'income' ? (
+                <>
+                  <option value="Salary">Salary</option>
+                  <option value="Bonus">Bonus</option>
+                  <option value="Freelance / Part-time">Freelance / Part-time</option>
+                  <option value="Business Income">Business Income</option>
+                  <option value="Investment Returns">Investment Returns</option>
+                  <option value="Other Income">Other Income</option>
+                </>
+              ) : (
+                <>
+                  <option value="Food & Dining">Food & Dining</option>
+                  <option value="Housing & Rent">Housing & Rent</option>
+                  <option value="Transportation">Transportation</option>
+                  <option value="Utilities">Utilities</option>
+                  <option value="Entertainment">Entertainment</option>
+                  <option value="Shopping">Shopping</option>
+                  <option value="Healthcare">Healthcare</option>
+                  <option value="Other Expenses">Other Expenses</option>
+                </>
+              )}
             </select>
           </div>
           <div className="form-group" style={{ marginBottom: '2rem' }}>

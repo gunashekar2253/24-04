@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.user import User
+from app.models.profile import FinancialProfile
 from app.schemas.user import UserCreate, UserLogin, UserResponse, Token
 from app.auth import hash_password, verify_password, create_access_token, get_current_user
 from fastapi.security import OAuth2PasswordRequestForm
@@ -12,6 +13,13 @@ router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 @router.post("/register", response_model=UserResponse)
 def register(user_data: UserCreate, db: Session = Depends(get_db)):
     """Register a new user."""
+    # Age constraint check
+    if user_data.age is not None and user_data.age <= 18:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You must be over 18 years old to register."
+        )
+
     # Check if username exists
     existing = db.query(User).filter(User.username == user_data.username).first()
     if existing:
@@ -29,6 +37,21 @@ def register(user_data: UserCreate, db: Session = Depends(get_db)):
     db.add(user)
     db.commit()
     db.refresh(user)
+
+    # Create associated financial profile immediately upon signup
+    profile = FinancialProfile(
+        user_id=user.id,
+        monthly_income=user_data.monthly_income,
+        monthly_expenses=user_data.monthly_expenses,
+        total_savings=user_data.total_savings,
+        loan_amount=user_data.loan_amount,
+        monthly_emi=user_data.monthly_emi,
+        credit_score=user_data.credit_score,
+        credit_card_usage=user_data.credit_card_usage
+    )
+    db.add(profile)
+    db.commit()
+
     return user
 
 
