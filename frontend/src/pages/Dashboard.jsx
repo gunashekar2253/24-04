@@ -101,7 +101,7 @@ const Dashboard = () => {
       <div className="dashboard-grid">
         {/* Metric Cards */}
         <div className="col-span-4 glass-panel" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          <div style={{ padding: '1rem', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '12px' }}><Wallet size={24} className="text-ai" /></div>
+          <div style={{ padding: '1rem', backgroundColor: 'rgba(79, 70, 229, 0.08)', borderRadius: '12px' }}><Wallet size={24} className="text-ai" /></div>
           <div><p className="subtitle">Disposable</p><h3>₹{data.investment_capacity.disposable_income}</h3></div>
         </div>
         <div className="col-span-4 glass-panel" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
@@ -109,7 +109,7 @@ const Dashboard = () => {
           <div><p className="subtitle">Safe Investment</p><h3>₹{data.investment_capacity.safe_monthly_investment}</h3></div>
         </div>
         <div className="col-span-4 glass-panel" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          <div style={{ padding: '1rem', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '12px' }}><Target size={24} /></div>
+          <div style={{ padding: '1rem', backgroundColor: 'rgba(15, 23, 42, 0.04)', borderRadius: '12px' }}><Target size={24} /></div>
           <div><p className="subtitle">Risk Tolerance</p><h3>{data.investment_capacity.risk_tolerance}</h3></div>
         </div>
 
@@ -127,9 +127,9 @@ const Dashboard = () => {
             <div style={{ height: '300px', width: '100%', marginTop: '2rem' }}>
               <ResponsiveContainer>
                 <LineChart data={data.spending_forecast.predictions}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                  <XAxis dataKey="date" stroke="rgba(255,255,255,0.5)" tick={{ fontSize: 12 }} />
-                  <YAxis stroke="rgba(255,255,255,0.5)" tick={{ fontSize: 12 }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(15,23,42,0.06)" />
+                  <XAxis dataKey="date" stroke="rgba(15,23,42,0.4)" tick={{ fontSize: 12 }} />
+                  <YAxis stroke="rgba(15,23,42,0.4)" tick={{ fontSize: 12 }} />
                   <Tooltip contentStyle={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: '8px' }} />
                   <Line type="monotone" dataKey="predicted_spend" stroke="var(--accent-ai)" strokeWidth={3} dot={false} activeDot={{ r: 8 }} />
                 </LineChart>

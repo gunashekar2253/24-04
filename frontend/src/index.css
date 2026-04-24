@@ -1,27 +1,27 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
-  /* Core Dark Mode Colors */
-  --bg-base: #121214;
-  --bg-surface: #1E1E24;
-  --bg-surface-glass: rgba(30, 30, 36, 0.6);
-  --border-color: rgba(255, 255, 255, 0.08);
+  /* Core Light Mode Colors */
+  --bg-base: #F8FAFC;
+  --bg-surface: #FFFFFF;
+  --bg-surface-glass: rgba(255, 255, 255, 0.7);
+  --border-color: rgba(15, 23, 42, 0.06);
   
   /* Text */
-  --text-primary: #FFFFFF;
-  --text-secondary: #A1A1AA;
-  --text-muted: #71717A;
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-muted: #94A3B8;
 
   /* Accents */
-  --accent-profit: #10B981; /* Emerald Green */
-  --accent-ai: #8B5CF6; /* Neon Violet */
-  --accent-ai-hover: #A78BFA;
-  --accent-warning: #EF4444; /* Crimson */
+  --accent-profit: #059669; /* Emerald Green */
+  --accent-ai: #4F46E5; /* Indigo */
+  --accent-ai-hover: #4338CA;
+  --accent-warning: #DC2626; /* Crimson */
 
   /* Glassmorphism */
   --glass-blur: blur(16px);
-  --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
-  --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+  --shadow-sm: 0 4px 6px -1px rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 10px 15px -3px rgba(15, 23, 42, 0.05);
   
   /* Fonts */
   --font-family: 'Inter', sans-serif;
@@ -144,7 +144,7 @@ h3 { font-size: 1.25rem; }
   transition: background-color 0.2s ease;
 }
 .btn-secondary:hover {
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: rgba(15, 23, 42, 0.04);
 }
 
 /* Forms */
