@@ -1,14 +1,23 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { Send, BrainCircuit, ShieldCheck, User as UserIcon } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 
 const AIAssistant = () => {
-  const [messages, setMessages] = useState([{
-    id: 1,
-    sender: 'ai',
-    text: "Hello. I am your specialized Finance AI Assistant powered by Google Gemini. How can I assist with your financial strategizing today?",
-    is_finance: true
-  }]);
+  const navigate = useNavigate();
+  const [messages, setMessages] = useState(() => {
+    const saved = localStorage.getItem('aiAssistantChat');
+    if (saved) {
+      return JSON.parse(saved);
+    }
+    return [{
+      id: 1,
+      sender: 'ai',
+      text: "Hello. I am your specialized Finance AI Assistant powered by Google Gemini. How can I assist with your financial strategizing today?",
+      is_finance: true
+    }];
+  });
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
@@ -19,6 +28,10 @@ const AIAssistant = () => {
 
   useEffect(() => {
     scrollToBottom();
+  }, [messages]);
+
+  useEffect(() => {
+    localStorage.setItem('aiAssistantChat', JSON.stringify(messages));
   }, [messages]);
 
   const handleSend = async (e) => {
@@ -32,6 +45,21 @@ const AIAssistant = () => {
 
     try {
       const res = await api.post('/query/', { query: userMessage.text });
+      
+      if (res.data.response.startsWith("REDIRECT_TO_STOCK:")) {
+          const ticker = res.data.response.replace("REDIRECT_TO_STOCK:", "").trim();
+          
+          setMessages(prev => [...prev, {
+            id: Date.now() + 1,
+            sender: 'ai',
+            text: `Routing link successful. Redirecting terminal to Equities Engine for ${ticker}...`,
+            is_finance: true
+          }]);
+          
+          setTimeout(() => navigate('/stocks', { state: { searchTicker: ticker } }), 800);
+          return;
+      }
+
       const aiMessage = {
         id: Date.now() + 1,
         sender: 'ai',
@@ -81,7 +109,7 @@ const AIAssistant = () => {
                   color: 'var(--text-primary)',
                   lineHeight: '1.6'
                 }}>
-                  {msg.text}
+                  <ReactMarkdown>{msg.text}</ReactMarkdown>
                 </div>
                 
                 {msg.sender === 'ai' && msg.reason && !msg.is_finance && (

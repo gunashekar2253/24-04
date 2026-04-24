@@ -52,15 +52,16 @@ def get_dashboard_data(
             if t.type == "expense" and t.date.month == now.month and t.date.year == now.year:
                 current_month_spending += t.amount
                 
-            analysis = anomaly_detector.detect(amount=t.amount, balance=profile.total_savings)
-            if analysis["is_anomaly"]:
-                recent_anomalies.append({
-                     "id": t.id,
-                     "date": t.date.strftime("%Y-%m-%d"),
-                     "amount": t.amount,
-                     "description": t.description,
-                     "severity": analysis["severity"]
-                })
+            if t.type == "expense":
+                analysis = anomaly_detector.detect(amount=t.amount, balance=profile.total_savings)
+                if analysis["is_anomaly"]:
+                    recent_anomalies.append({
+                         "id": t.id,
+                         "date": t.date.strftime("%Y-%m-%d"),
+                         "amount": t.amount,
+                         "description": t.description,
+                         "severity": analysis["severity"]
+                    })
         
         
         # Decision Engine Fusion (Prophet + XGBoost)

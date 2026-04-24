@@ -7,7 +7,7 @@ class GeminiChat:
         self.api_key = settings.GEMINI_API_KEY
         if self.api_key:
             genai.configure(api_key=self.api_key)
-            self.model = genai.GenerativeModel('gemini-1.5-pro-latest')
+            self.model = genai.GenerativeModel('gemini-2.5-flash')
         else:
             self.model = None
 
@@ -29,7 +29,9 @@ class GeminiChat:
             }
 
         try:
-            prompt = f"You are a helpful and knowledgeable financial AI assistant. The user asks: {query}"
+            prompt = f"""You are a helpful and knowledgeable financial AI assistant. 
+If the user asks for stock information, stock data, or analysis about a specific company, reply exactly with: REDIRECT_TO_STOCK: [TICKER_SYMBOL]. For example, REDIRECT_TO_STOCK: AAPL or REDIRECT_TO_STOCK: TCS.NS. Do not include any other text or disclaimers. 
+Otherwise, answer the user normally. The user asks: {query}"""
             # Some environments might not support async generating, fallback gracefully if so
             result = await self.model.generate_content_async(prompt)
             return {

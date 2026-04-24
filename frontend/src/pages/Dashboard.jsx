@@ -7,15 +7,17 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 const RiskGauge = ({ score, label }) => {
   const rotation = Math.max(0, Math.min(180, (score / 100) * 180));
   const color = label === 'High Risk' ? 'var(--accent-warning)' : label === 'Medium Risk' ? 'var(--text-secondary)' : 'var(--accent-profit)';
-  
+  const trackColor = 'var(--bg-base)'; 
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '2rem 0' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '1.5rem 0' }}>
       <div style={{ position: 'relative', width: '200px', height: '100px', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', top: '0', left: '0', width: '200px', height: '200px', borderRadius: '50%', border: '20px solid var(--bg-base)', borderBottomColor: 'transparent', borderRightColor: 'transparent', transform: 'rotate(45deg)' }} />
+        <div style={{ position: 'absolute', top: '0', left: '0', width: '200px', height: '200px', borderRadius: '50%', border: `20px solid ${trackColor}`, borderBottomColor: 'transparent', borderRightColor: 'transparent', transform: 'rotate(45deg)' }} />
         <div style={{ position: 'absolute', top: '0', left: '0', width: '200px', height: '200px', borderRadius: '50%', border: `20px solid ${color}`, borderBottomColor: 'transparent', borderRightColor: 'transparent', transform: `rotate(${45 + rotation}deg)`, transition: 'transform 1s ease-out' }} />
       </div>
-      <h2 style={{ color, marginTop: '1rem' }}>{score}% - {label}</h2>
-      <p style={{ color: 'var(--text-secondary)' }}>Neural Network Score</p>
+      <h2 style={{ color, marginTop: '1.25rem' }}>{label}</h2>
+      <p style={{ color: 'var(--text-primary)', fontSize: '1.25rem', fontWeight: 600 }}>{Math.round(score)} / 100</p>
+      <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>AI Volatility Index</p>
     </div>
   );
 };
@@ -81,10 +83,10 @@ const Dashboard = () => {
         <h2 style={{ marginBottom: '1rem', textAlign: 'center' }}>Initialize AI Financial Profile</h2>
         <p className="subtitle" style={{ textAlign: 'center', marginBottom: '2rem' }}>Please provide your baseline metrics to unlock AI predictions.</p>
         <form onSubmit={handleProfileSubmit}>
-          <div className="form-group"><label>Monthly Income (₹)</label><input type="number" className="form-input" value={profileData.monthly_income} onChange={e=>setProfileData({...profileData, monthly_income: e.target.value})} required/></div>
-          <div className="form-group"><label>Monthly Expenses (₹)</label><input type="number" className="form-input" value={profileData.monthly_expenses} onChange={e=>setProfileData({...profileData, monthly_expenses: e.target.value})} required/></div>
-          <div className="form-group"><label>Total Savings (₹)</label><input type="number" className="form-input" value={profileData.total_savings} onChange={e=>setProfileData({...profileData, total_savings: e.target.value})} required/></div>
-          <div className="form-group"><label>Credit Score (300-900)</label><input type="number" className="form-input" value={profileData.credit_score} onChange={e=>setProfileData({...profileData, credit_score: e.target.value})} required/></div>
+          <div className="form-group"><label>Monthly Income (₹)</label><input type="number" className="form-input" value={profileData.monthly_income} onChange={e => setProfileData({ ...profileData, monthly_income: e.target.value })} required /></div>
+          <div className="form-group"><label>Monthly Expenses (₹)</label><input type="number" className="form-input" value={profileData.monthly_expenses} onChange={e => setProfileData({ ...profileData, monthly_expenses: e.target.value })} required /></div>
+          <div className="form-group"><label>Total Savings (₹)</label><input type="number" className="form-input" value={profileData.total_savings} onChange={e => setProfileData({ ...profileData, total_savings: e.target.value })} required /></div>
+          <div className="form-group"><label>Credit Score (300-900)</label><input type="number" className="form-input" value={profileData.credit_score} onChange={e => setProfileData({ ...profileData, credit_score: e.target.value })} required /></div>
           <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '1rem' }} disabled={profileLoading}>{profileLoading ? 'Initializing Neural Engines...' : 'Save & Boot Engines'}</button>
         </form>
       </div>
@@ -117,12 +119,11 @@ const Dashboard = () => {
         <div className="col-span-4 glass-panel" style={{ textAlign: 'center' }}>
           <h3><BrainCircuit style={{ display: 'inline', verticalAlign: 'middle', marginRight: '8px' }} size={20} className="text-ai" /> AI Risk Assessment</h3>
           <RiskGauge score={data.risk_assessment.risk_score} label={data.risk_assessment.risk_label} />
-          <p className="subtitle" style={{ fontSize: '0.875rem' }}>Default Probability: {(data.risk_assessment.details.default_probability * 100).toFixed(1)}%</p>
         </div>
 
         {/* Spending Forecast */}
         <div className="col-span-8 glass-panel">
-          <h3>Spending Forecast (Prophet AI)</h3>
+          <h3>Spending Forecast</h3>
           {data.transactions_count > 0 ? (
             <div style={{ height: '300px', width: '100%', marginTop: '2rem' }}>
               <ResponsiveContainer>
@@ -155,18 +156,18 @@ const Dashboard = () => {
             <ShieldAlert size={20} /> Isolation Forest Anomalies
           </h3>
           <div style={{ marginTop: '1rem', color: 'var(--text-secondary)' }}>
-            {data.transactions_count === 0 ? "No live ledger data strictly available to scan." : 
-              (data.recent_anomalies?.length === 0 ? "Analyzing live stream... No critical flag points detected currently." : 
+            {data.transactions_count === 0 ? "No live ledger data strictly available to scan." :
+              (data.recent_anomalies?.length === 0 ? "Analyzing live stream... No critical flag points detected currently." :
                 (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                     {data.recent_anomalies.slice(0, 4).map((anomaly, idx) => (
-                       <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', backgroundColor: 'rgba(239, 68, 68, 0.1)', borderRadius: '8px', borderLeft: '3px solid var(--accent-warning)' }}>
-                          <div>
-                            <div style={{ fontWeight: 600, color: 'var(--text-primary)'}}>{anomaly.description}</div>
-                            <div style={{ fontSize: '0.75rem' }}>{anomaly.date} • {anomaly.severity} Severity</div>
-                          </div>
-                          <div style={{ fontWeight: 600, color: 'var(--accent-warning)' }}>₹{anomaly.amount.toLocaleString()}</div>
-                       </div>
+                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', backgroundColor: 'rgba(239, 68, 68, 0.1)', borderRadius: '8px', borderLeft: '3px solid var(--accent-warning)' }}>
+                        <div>
+                          <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{anomaly.description}</div>
+                          <div style={{ fontSize: '0.75rem' }}>{anomaly.date} • {anomaly.severity} Severity</div>
+                        </div>
+                        <div style={{ fontWeight: 600, color: 'var(--accent-warning)' }}>₹{anomaly.amount.toLocaleString()}</div>
+                      </div>
                     ))}
                   </div>
                 )

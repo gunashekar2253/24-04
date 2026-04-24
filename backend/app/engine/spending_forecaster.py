@@ -65,9 +65,12 @@ class SpendingForecaster:
 
         forecast_data = forecast.tail(days)[["ds", "yhat", "yhat_lower", "yhat_upper"]]
         results = []
-        for _, row in forecast_data.iterrows():
+        import datetime
+        today = datetime.datetime.now()
+        for i, (_, row) in enumerate(forecast_data.iterrows()):
+            new_date = today + datetime.timedelta(days=i)
             results.append({
-                "date": row["ds"].strftime("%Y-%m-%d"),
+                "date": new_date.strftime("%Y-%m-%d"),
                 "predicted_spend": round(float(row["yhat"]), 2),
                 "lower_bound": round(float(row["yhat_lower"]), 2),
                 "upper_bound": round(float(row["yhat_upper"]), 2)

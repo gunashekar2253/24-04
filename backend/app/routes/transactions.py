@@ -36,8 +36,23 @@ def add_transaction(
     # Check for anomaly using actual profile savings to correctly calculate impact context
     from app.models.profile import FinancialProfile
     profile = db.query(FinancialProfile).filter(FinancialProfile.user_id == current_user.id).first()
+    
+    if profile:
+        if transaction.type == "income":
+            profile.total_savings += transaction.amount
+        elif transaction.type == "expense":
+            profile.total_savings -= transaction.amount
+        
+        # Enforce baseline
+        profile.total_savings = max(profile.total_savings, 0)
+        db.commit()
+
     savings = profile.total_savings if profile else 0
-    anomaly_status = anomaly_detector.detect(amount=transaction.amount, balance=savings)
+    
+    if transaction.type == "expense":
+        anomaly_status = anomaly_detector.detect(amount=transaction.amount, balance=savings)
+    else:
+        anomaly_status = {"is_anomaly": False, "severity": "Normal"}
 
     return {
         **transaction.__dict__,
@@ -58,9 +73,14 @@ def get_transactions(
 
     results = []
     for t in transactions:
+        if t.type == "expense":
+            analysis = anomaly_detector.detect(amount=t.amount, balance=savings)
+        else:
+            analysis = {"is_anomaly": False, "severity": "Normal"}
+            
         results.append({
             **t.__dict__,
-            "anomaly_analysis": anomaly_detector.detect(amount=t.amount, balance=savings)
+            "anomaly_analysis": analysis
         })
         
     return results
@@ -75,6 +95,17 @@ def delete_transaction(
     transaction = db.query(Transaction).filter(Transaction.id == transaction_id, Transaction.user_id == current_user.id).first()
     if not transaction:
         raise HTTPException(status_code=404, detail="Transaction not found")
+        
+    from app.models.profile import FinancialProfile
+    profile = db.query(FinancialProfile).filter(FinancialProfile.user_id == current_user.id).first()
+    
+    if profile:
+        if transaction.type == "income":
+            profile.total_savings -= transaction.amount
+        elif transaction.type == "expense":
+            profile.total_savings += transaction.amount
+            
+        profile.total_savings = max(profile.total_savings, 0)
         
     db.delete(transaction)
     db.commit()

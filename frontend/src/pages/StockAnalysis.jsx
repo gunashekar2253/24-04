@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import { Search, BrainCircuit, LineChart, MessageSquare, Briefcase } from 'lucide-react';
 import { ResponsiveContainer, LineChart as RechartsLineChart, Line, XAxis, YAxis, Tooltip } from 'recharts';
+import ReactMarkdown from 'react-markdown';
+
+import { useLocation } from 'react-router-dom';
 
 const StockAnalysis = () => {
+  const location = useLocation();
   const [tickerSearch, setTickerSearch] = useState('');
   const [stockData, setStockData] = useState(null);
   const [aiAnalysis, setAiAnalysis] = useState('');
@@ -13,16 +17,15 @@ const StockAnalysis = () => {
   const [chatInput, setChatInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
 
-  const handleSearch = async (e) => {
-    e.preventDefault();
-    if (!tickerSearch) return;
+  const fetchStockData = async (tickerValue) => {
+    if (!tickerValue) return;
     setLoadingSearch(true);
     setStockData(null);
     setAiAnalysis('');
     setChatMessages([]);
 
     try {
-      const res = await api.get(`/stocks/analyze/${tickerSearch}`);
+      const res = await api.get(`/stocks/analyze/${tickerValue}`);
       setStockData(res.data.stock_data);
       setAiAnalysis(res.data.ai_analysis);
       
@@ -38,6 +41,19 @@ const StockAnalysis = () => {
       setLoadingSearch(false);
     }
   };
+
+  const handleSearch = async (e) => {
+    e?.preventDefault();
+    fetchStockData(tickerSearch);
+  };
+
+  useEffect(() => {
+    if (location.state?.searchTicker) {
+       setTickerSearch(location.state.searchTicker);
+       fetchStockData(location.state.searchTicker);
+       window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   const handleChat = async (e) => {
     e.preventDefault();
@@ -124,8 +140,8 @@ const StockAnalysis = () => {
 
             <div>
               <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}><LineChart size={18} className="text-ai" /> CrewAI Fundamental Analysis</h3>
-              <div style={{ backgroundColor: 'rgba(139, 92, 246, 0.05)', border: '1px solid rgba(139, 92, 246, 0.2)', padding: '1.5rem', borderRadius: '8px', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
-                {aiAnalysis}
+              <div style={{ backgroundColor: 'rgba(139, 92, 246, 0.05)', border: '1px solid rgba(139, 92, 246, 0.2)', padding: '1.5rem', borderRadius: '8px', lineHeight: '1.6' }}>
+                <ReactMarkdown>{aiAnalysis}</ReactMarkdown>
               </div>
             </div>
           </div>
@@ -151,7 +167,7 @@ const StockAnalysis = () => {
                     fontSize: '0.875rem',
                     lineHeight: '1.5'
                   }}>
-                    {msg.text}
+                    <ReactMarkdown>{msg.text}</ReactMarkdown>
                   </div>
                 </div>
               ))}
