@@ -60,8 +60,9 @@ class BudgetOptimizer:
 
         if debt_ratio > 0.40:
             recs.append(f"Your debt ratio ({debt_ratio*100:.1f}%) is dangerously high. Target debt consolidation.")
-        if cc_usage > 0.50:
-            recs.append(f"Credit limit utilized at {cc_usage*100:.1f}%! Keep this beneath 50% to shield your Credit Score.")
+        cc_usage_pct = cc_usage if cc_usage > 1 else cc_usage * 100
+        if cc_usage_pct > 50:
+            recs.append(f"Credit limit utilized at {cc_usage_pct:.1f}%! Keep this beneath 50% to shield your Credit Score.")
             
         # 6. Cross-Engine ML Fusion
         if risk and risk.get("risk_score", 0) > 70:

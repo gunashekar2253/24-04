@@ -45,19 +45,19 @@ const AIAssistant = () => {
 
     try {
       const res = await api.post('/query/', { query: userMessage.text });
-      
+
       if (res.data.response.startsWith("REDIRECT_TO_STOCK:")) {
-          const ticker = res.data.response.replace("REDIRECT_TO_STOCK:", "").trim();
-          
-          setMessages(prev => [...prev, {
-            id: Date.now() + 1,
-            sender: 'ai',
-            text: `Routing link successful. Redirecting terminal to Equities Engine for ${ticker}...`,
-            is_finance: true
-          }]);
-          
-          setTimeout(() => navigate('/stocks', { state: { searchTicker: ticker } }), 800);
-          return;
+        const ticker = res.data.response.replace("REDIRECT_TO_STOCK:", "").trim();
+
+        setMessages(prev => [...prev, {
+          id: Date.now() + 1,
+          sender: 'ai',
+          text: `Routing link successful. Redirecting terminal to Equities Engine for ${ticker}...`,
+          is_finance: true
+        }]);
+
+        setTimeout(() => navigate('/stocks', { state: { searchTicker: ticker } }), 800);
+        return;
       }
 
       const aiMessage = {
@@ -80,7 +80,7 @@ const AIAssistant = () => {
       <header style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
           <h1>Strategic Advisor</h1>
-          <p className="subtitle">Direct neural link to your financial advisory unit.</p>
+          {/* <p className="subtitle">Direct neural link to your financial advisory unit.</p> */}
         </div>
         <div className="ai-indicator">
           <div className="ai-indicator-dot" /> 🔒 Finance Specialization Active
@@ -97,9 +97,9 @@ const AIAssistant = () => {
                   <BrainCircuit size={20} color="white" />
                 </div>
               )}
-              
+
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <div style={{ 
+                <div style={{
                   background: msg.sender === 'user' ? 'rgba(255,255,255,0.05)' : (!msg.is_finance ? 'rgba(239, 68, 68, 0.1)' : 'rgba(139,92,246,0.1)'),
                   border: `1px solid ${msg.sender === 'user' ? 'var(--border-color)' : (!msg.is_finance ? 'rgba(239, 68, 68, 0.3)' : 'rgba(139,92,246,0.3)')}`,
                   padding: '1rem 1.5rem',
@@ -111,7 +111,7 @@ const AIAssistant = () => {
                 }}>
                   <ReactMarkdown>{msg.text}</ReactMarkdown>
                 </div>
-                
+
                 {msg.sender === 'ai' && msg.reason && !msg.is_finance && (
                   <div style={{ fontSize: '0.75rem', color: 'var(--accent-warning)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                     <ShieldCheck size={12} /> {msg.reason}
@@ -140,11 +140,11 @@ const AIAssistant = () => {
         {/* Input Boundary */}
         <div style={{ borderTop: '1px solid var(--border-color)', padding: '1.5rem', backgroundColor: 'var(--bg-base)' }}>
           <form onSubmit={handleSend} style={{ display: 'flex', gap: '1rem' }}>
-            <input 
-              type="text" 
-              className="form-input" 
-              style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.02)' }} 
-              placeholder="Ask for advice, budget plans, loan structures..." 
+            <input
+              type="text"
+              className="form-input"
+              style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.02)' }}
+              placeholder="Ask for advice, budget plans, loan structures..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
               disabled={loading}
