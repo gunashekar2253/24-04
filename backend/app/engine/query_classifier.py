@@ -15,6 +15,7 @@ FINANCE_KEYWORDS = [
     "ppf", "nps", "elss", "gst", "tds", "itr", "capital gain", "net worth",
     "spend", "groceries", "rent", "utility", "bill", "payment", "transaction",
     "anomaly", "forecast", "predict", "risk", "score", "goal", "plan",
+    "buy", "cost", "price", "purchase", "afford", "lakhs", "crores", "rupees", "dollars", "pay"
 ]
 
 NON_FINANCE_INDICATORS = [
