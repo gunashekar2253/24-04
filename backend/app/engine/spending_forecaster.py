@@ -53,8 +53,22 @@ class SpendingForecaster:
         behavior_score = float(self.xgb_model.predict(scaled)[0])
         return min(max(behavior_score, 0.0), 1.0) # Clamp boundaries
 
-    def forecast_spending(self, days: int = 30, profile_dict: dict = None) -> dict:
-        """Phase 3.2 Time-Series Forecasting (Prophet)"""
+    def get_real_daily_avg(self, transactions: list) -> float:
+        if not transactions:
+            return 0.0
+            
+        expenses = [t.amount for t in transactions if t.type == "expense"]
+        if not expenses:
+            return 0.0
+            
+        import numpy as np
+        # Outlier control
+        expenses = np.clip(expenses, 0, np.percentile(expenses, 95)).tolist()
+        unique_days = len(set([t.date.strftime("%Y-%m-%d") for t in transactions]))
+        return float(sum(expenses) / max(unique_days, 1))
+
+    def forecast_spending(self, days: int = 30, profile_dict: dict = None, transactions: list = None) -> dict:
+        """Phase 3.2 Time-Series Forecasting (Prophet) with Blending"""
         if self.prophet_model is None:
             # Fallback logic if Prophet fails
             fallback_spend = profile_dict.get("monthly_expenses", 0) / 30 if profile_dict else 0
@@ -67,17 +81,38 @@ class SpendingForecaster:
         results = []
         import datetime
         today = datetime.datetime.now()
+        
+        # Controlled Blending Setup
+        transactions = transactions or []
+        real_avg = self.get_real_daily_avg(transactions)
+        
+        if not transactions or real_avg == 0:
+            weight = 0.0
+        elif len(transactions) < 5:
+            weight = 0.1
+        else:
+            weight = 0.3
+            
+        adjusted_yhats = []
         for i, (_, row) in enumerate(forecast_data.iterrows()):
             new_date = today + datetime.timedelta(days=i)
+            prophet_val = float(row["yhat"])
+            
+            # Blending calculation
+            adjusted = (prophet_val * (1 - weight)) + (real_avg * weight)
+            adjusted_yhats.append(adjusted)
+            
             results.append({
                 "date": new_date.strftime("%Y-%m-%d"),
-                "predicted_spend": round(float(row["yhat"]), 2),
-                "lower_bound": round(float(row["yhat_lower"]), 2),
-                "upper_bound": round(float(row["yhat_upper"]), 2)
+                "predicted_spend": round(adjusted, 2),
+                "lower_bound": round(adjusted * 0.8, 2),
+                "upper_bound": round(adjusted * 1.2, 2)
             })
 
-        avg_future_spend = forecast_data["yhat"].mean()
-        trend_velocity = forecast_data["yhat"].diff().mean()
+        avg_future_spend = sum(adjusted_yhats) / len(adjusted_yhats) if adjusted_yhats else 0
+        
+        import pandas as pd
+        trend_velocity = pd.Series(adjusted_yhats).diff().mean() if adjusted_yhats else 0
 
         return {
             "forecast_days": days,
@@ -86,13 +121,13 @@ class SpendingForecaster:
             "predictions": results
         }
 
-    def predict_spending_fusion(self, profile_dict: dict) -> dict:
+    def predict_spending_fusion(self, profile_dict: dict, transactions: list = None) -> dict:
         """Phase 4 & 5: Smart Combination and Business Intelligence"""
         # 1. Behavior Score (Stability)
         stability_score = self.evaluate_behavior(profile_dict)
         
         # 2. Temporal Forecast
-        forecast_result = self.forecast_spending(days=30, profile_dict=profile_dict)
+        forecast_result = self.forecast_spending(days=30, profile_dict=profile_dict, transactions=transactions)
         avg_future_spend_daily = forecast_result.get("avg_future_spend", 0)
         trend = forecast_result.get("trend", 0)
         

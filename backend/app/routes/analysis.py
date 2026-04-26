@@ -65,10 +65,10 @@ def get_dashboard_data(
         
         
         # Decision Engine Fusion (Prophet + XGBoost)
-        spending_forecast = spending_forecaster.predict_spending_fusion(profile_dict)
+        spending_forecast = spending_forecaster.predict_spending_fusion(profile_dict, transactions=transactions)
     else:
         # Fallback profile-based behavioral model if no transactions exist
-        spending_forecast = spending_forecaster.predict_spending_fusion(profile_dict)
+        spending_forecast = spending_forecaster.predict_spending_fusion(profile_dict, transactions=[])
         spending_forecast["status"] = "No historical transactions. Behavioral static scaling applied."
 
     # 3. Dynamic Advisory AI (Cross-Engine Binding)
