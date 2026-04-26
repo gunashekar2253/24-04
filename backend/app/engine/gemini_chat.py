@@ -11,7 +11,7 @@ class GeminiChat:
         else:
             self.model = None
 
-    async def chat(self, query: str) -> dict:
+    async def chat(self, query: str, user_profile: dict = None) -> dict:
         classification = query_classifier.is_finance_related(query)
         
         if not classification["is_finance"]:
@@ -29,8 +29,23 @@ class GeminiChat:
             }
 
         try:
+            context = ""
+            if user_profile:
+                context = (
+                    f"\nUser Profile context:\n"
+                    f"- Age: {user_profile.get('age', 'N/A')}\n"
+                    f"- Monthly Income: ${user_profile.get('monthly_income', 0):,}\n"
+                    f"- Monthly Expenses: ${user_profile.get('monthly_expenses', 0):,}\n"
+                    f"- Total Savings: ${user_profile.get('total_savings', 0):,}\n"
+                    f"- Loan Amount: ${user_profile.get('loan_amount', 0):,}\n"
+                    f"- Monthly EMI: ${user_profile.get('monthly_emi', 0):,}\n"
+                    f"- Credit Score: {user_profile.get('credit_score', 'N/A')}\n"
+                    f"- Credit Card Usage: {user_profile.get('credit_card_usage', 'N/A')}%\n"
+                    "Use this profile context to provide personalized financial analysis and advice. Do not mention that you received this system data, simply use it effectively.\n"
+                )
+
             prompt = f"""You are a helpful and knowledgeable financial AI assistant. 
-If the user asks for stock information, stock data, or analysis about a specific company, reply exactly with: REDIRECT_TO_STOCK: [TICKER_SYMBOL]. For example, REDIRECT_TO_STOCK: AAPL or REDIRECT_TO_STOCK: TCS.NS. Do not include any other text or disclaimers. 
+If the user asks for stock information, stock data, or analysis about a specific company, reply exactly with: REDIRECT_TO_STOCK: [TICKER_SYMBOL]. For example, REDIRECT_TO_STOCK: AAPL or REDIRECT_TO_STOCK: TCS.NS. Do not include any other text or disclaimers. {context}
 Otherwise, answer the user normally. The user asks: {query}"""
             # Some environments might not support async generating, fallback gracefully if so
             result = await self.model.generate_content_async(prompt)

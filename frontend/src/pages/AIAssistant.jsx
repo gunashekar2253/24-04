@@ -137,6 +137,28 @@ const AIAssistant = () => {
           <div ref={messagesEndRef} />
         </div>
 
+        {/* Quick Actions */}
+        <div style={{ padding: '1rem 1.5rem 0', backgroundColor: 'var(--bg-base)', display: 'flex', gap: '0.5rem' }}>
+          <button 
+            type="button"
+            onClick={() => setInput("Can you analyze my financial profile and give me personalized suggestions for improvement?")}
+            style={{ 
+              background: 'rgba(139,92,246,0.1)', 
+              color: 'var(--accent-ai)', 
+              border: '1px solid rgba(139,92,246,0.3)', 
+              padding: '0.5rem 1rem', 
+              borderRadius: '20px',
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+            onMouseOver={(e) => e.currentTarget.style.background = 'rgba(139,92,246,0.2)'}
+            onMouseOut={(e) => e.currentTarget.style.background = 'rgba(139,92,246,0.1)'}
+          >
+            ✨ Analyze My Profile
+          </button>
+        </div>
+
         {/* Input Boundary */}
         <div style={{ borderTop: '1px solid var(--border-color)', padding: '1.5rem', backgroundColor: 'var(--bg-base)' }}>
           <form onSubmit={handleSend} style={{ display: 'flex', gap: '1rem' }}>
